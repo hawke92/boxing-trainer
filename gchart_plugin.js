@@ -1,125 +1,126 @@
 (function()
 {
+  var gsheetPlaybackDatasource = function (settings, updateCallback) {
+      var self = this;
+      var currentSettings = settings;
+      var currentDataset = [];
+      var currentIndex = 0;
+      var currentTimeout;
+          
+          function convertToJSON(value) {
+              var stArray = value.split(', ');
+              var obj = {};
+              for (var i in stArray) {
+                  var sig = stArray[i].split(": ");
+                  obj[sig[0]] = sig[1];
+              }
+              return obj;
+          }
+
+      function moveNext() {
+        if (currentDataset.length > 0) {
+          if (currentIndex < currentDataset.length) {
+            currentDataset[currentIndex]["content"]["$t"] = convertToJSON(currentDataset[currentIndex]["content"]["$t"]);
+            updateCallback(currentDataset[currentIndex]);
+            currentIndex++;
+          }
+
+          if (currentIndex >= currentDataset.length && currentSettings.loop) {
+            currentIndex = 0;
+          }
+
+          if (currentIndex < currentDataset.length) {
+            currentTimeout = setTimeout(moveNext, currentSettings.refresh * 1000);
+          }
+        }
+        else {
+          updateCallback({});
+        }
+      }
+
+      function stopTimeout() {
+        currentDataset = [];
+        currentIndex = 0;
+
+        if (currentTimeout) {
+          clearTimeout(currentTimeout);
+          currentTimeout = null;
+        }
+      }
+
+      this.updateNow = function () {
+        stopTimeout();
+        var currUrl = "https://thingproxy.freeboard.io/fetch/https://spreadsheets.google.com/feeds/list/"+currentSettings.sheet_key+"/"+currentSettings.worksheet_id+"/public/basic?alt=json";
+        $.ajax({
+          url: currUrl,
+          dataType: (currentSettings.is_jsonp) ? "JSONP" : "JSON",
+          success: function (data) {
+            data = data.feed.entry;
+            if (_.isArray(data)) {
+              currentDataset = data;
+              console.log(currentDataset);
+            }
+            else {
+              currentDataset = [];
+            }
+            currentIndex = 0;
+            moveNext();
+          },
+          error: function (xhr, status, error) {
+          }
+        });
+      }
+
+      this.onDispose = function () {
+        stopTimeout();
+      }
+
+      this.onSettingsChanged = function (newSettings) {
+        currentSettings = newSettings;
+        self.updateNow();
+      }
+  };
+
   freeboard.loadDatasourcePlugin({
-    "type_name"   : "my_datasource_plugin",
-    "display_name": "Datasource Plugin Example",
-    "description" : "Some sort of description <strong>with optional html!</strong>",
-    "external_scripts" : [
-      "http://mydomain.com/myscript1.js","http://mydomain.com/myscript2.js"
-    ],
-    "settings"    : [
-      {
-        "name"         : "first_name",
-        "display_name" : "First Name",
-        "type"         : "text",
-        "default_value": "John",
-        "description"  : "This is pretty self explanatory..."
-      },
-      {
-        "name"        : "last_name",
-        "display_name": "Last Name",
-        "type"        : "calculated"
-      },
-      {
-        "name"        : "is_human",
-        "display_name": "I am human",https://www.dropbox.com/s/h16jyb8fgjy199i/plugin_example.js?dl=1?raw=1
-        "type"        : "boolean"
-      },
-      {
-        "name"        : "age",
-        "display_name": "Your age",
-        "type"        : "option",
-        "options"     : [
-          {
-            "name" : "0-50",
-            "value": "young"
-          },
-          {
-            "name" : "51-100",
-            "value": "old"
-          }
-        ]
-      },
-      {
-        "name"        : "other",
-        "display_name": "Other attributes",
-        "type"        : "array",
-        "settings"    : [
-          {
-            "name"        : "name",
-            "display_name": "Name",
-            "type"        : "text"
-          },
-          {
-            "name"        : "value",
-            "display_name": "Value",
-            "type"        : "text"
-          }
-        ]
-      },
-      {
-        "name"         : "refresh_time",
-        "display_name" : "Refresh Time",
-        "type"         : "text",
-        "description"  : "In milliseconds",
-        "default_value": 5000
+      "type_name": "gsheetplayback",
+      "display_name": "Google Sheet Playback",
+      "settings": [
+        {
+          "name": "sheet_key",
+          "display_name": "Sheet Ket",
+          "type": "text",
+          "description": ""
+        },
+        {
+            "name":"worksheet_id",
+            "display_name":"Worksheet ID",
+            "type":"text",
+            "default_value":"default"
+        },
+        {
+          name: "is_jsonp",
+          display_name: "Is JSONP",
+          type: "boolean",
+          "default_value":false
+        },
+        {
+          "name": "loop",
+          "display_name": "Loop",
+          "type": "boolean",
+          "description": "Rewind and loop when finished"
+        },
+        {
+          "name": "refresh",
+          "display_name": "Refresh Every",
+          "type": "number",
+          "suffix": "seconds",
+          "default_value": 5
+        }
+      ],
+      newInstance: function (settings, newInstanceCallback, updateCallback) {
+        newInstanceCallback(new gsheetPlaybackDatasource(settings, updateCallback));
       }
-    ],
-
-    newInstance(settings, newInstanceCallback, updateCallback)
-    {
-      newInstanceCallback(new myDatasourcePlugin(settings, updateCallback));
-    }
   });
- 
-  var myDatasourcePlugin = function(settings, updateCallback)
-  {
-    var self = this;
-    var currentSettings = settings;
-
-    /* This is some function where I'll get my data from somewhere */
-    function getData()
-    {
-      var newData = { hello : "world! it's " + new Date().toLocaleTimeString() }; // Just putting some sample data in for fun.
-
-      /* Get my data from somewhere and populate newData with it... Probably a JSON API or something. */
-      /* ... */
-      updateCallback(newData);
-    }
-
-    var refreshTimer;
-
-    function createRefreshTimer(interval)
-    {
-      if(refreshTimer)
-      {
-        clearInterval(refreshTimer);
-      }
-
-      refreshTimer = setInterval(function()
-      {
-        getData();
-      }, interval);
-    }
-
-    self.onSettingsChanged = function(newSettings)
-    {
-      currentSettings = newSettings;
-    }
-
-    self.updateNow = function()
-    {
-      getData();
-    }
-
-    self.onDispose = function()
-    {
-      clearInterval(refreshTimer);
-      refreshTimer = undefined;
-    }
-
-    createRefreshTimer(currentSettings.refresh_time);
-  }
 
 
   freeboard.loadWidgetPlugin({
@@ -202,15 +203,15 @@
           },
           hAxis: {
             title: 'Time (s)',
-//             viewWindow: {max: 1600},
+            viewWindow: {max: 1600},
             ticks: [0, 250, 500, 750, 1000, 1250, 1500]
-          }
-//           series: {
-//             0: {color: 'blue'},
-//             1: {color: 'red'},
-//             2: {color: 'orange'},
-//           },
-//           legend: { maxLines: 3}  
+          },
+          series: {
+            0: {color: 'blue'},
+            1: {color: 'red'},
+            2: {color: 'orange'},
+          },
+          legend: { maxLines: 3}  
         };
 
         var data = response.getDataTable();
