@@ -202,7 +202,7 @@
           },
           hAxis: {
             title: 'Time (s)',
-            viewWindow: {max: 1600},
+//             viewWindow: {max: 1600},
             ticks: [0, 250, 500, 750, 1000, 1250, 1500]
           }
 //           series: {
