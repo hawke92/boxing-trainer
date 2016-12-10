@@ -22,7 +22,7 @@
       },
       {
         "name"        : "is_human",
-        "display_name": "I am human",
+        "display_name": "I am human",https://www.dropbox.com/s/h16jyb8fgjy199i/plugin_example.js?dl=1?raw=1
         "type"        : "boolean"
       },
       {
@@ -204,13 +204,13 @@
             title: 'Time (s)',
             viewWindow: {max: 1600},
             ticks: [0, 250, 500, 750, 1000, 1250, 1500]
-          },
-          series: {
-            0: {color: 'blue'},
-            1: {color: 'red'},
-            2: {color: 'orange'},
-          },
-          legend: { maxLines: 3}  
+          }
+//           series: {
+//             0: {color: 'blue'},
+//             1: {color: 'red'},
+//             2: {color: 'orange'},
+//           },
+//           legend: { maxLines: 3}  
         };
 
         var data = response.getDataTable();
