@@ -43,7 +43,7 @@
 
       // // Set a callback to run when the Google Visualization API is loaded.
       google.charts.setOnLoadCallback(drawChart);
-
+      setInterval(drawChart, 2000);
       // var chartDiv = '<div id="chart_div" style="width: 900px; height: 500px"></div>';
       // $(containerElement).append(chartDiv);
       // htmlElement = $(chartDiv);
